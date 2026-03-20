@@ -1,0 +1,74 @@
+{
+  "projectType": "saas",
+  "projectName": "TouchAI",
+  "projectDescription": "A minimalist Tauri-based desktop AI assistant that gives instant access to AI models via a global keyboard shortcut.",
+  "theme": "willow",
+  "primaryColor": "#848c8e",
+  "lightColor": "#11161e",
+  "darkColor": "#cfd0d2",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart", "installation"]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/ai-search",
+              "features/conversation",
+              "features/quick-search",
+              "features/mcp-tools"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/ai-providers",
+              "configuration/general-settings",
+              "configuration/keyboard-shortcuts",
+              "configuration/data-management"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/setup",
+              "development/architecture",
+              "development/contributing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Global keyboard shortcut (Alt+Space) to summon an instant AI assistant overlay",
+    "Multi-turn conversational AI with streaming responses",
+    "Support for multiple AI providers (OpenAI-compatible and Anthropic)",
+    "MCP (Model Context Protocol) tool integration for agentic workflows",
+    "Quick search panel for history and past conversations",
+    "File and image attachment support for multimodal queries",
+    "Transparent, borderless floating window that stays on top",
+    "Local SQLite database for persistent conversation history",
+    "System tray integration with autostart support",
+    "Monaco editor for rich code rendering"
+  ],
+  "publicApiSurface": [
+    "AiServiceManager.run(options: ExecuteRequestOptions)",
+    "AiServiceManager.getModel(options?)",
+    "AiServiceManager.createProviderInstance(providerType, apiEndpoint, apiKey?)",
+    "useSettingsStore() — Pinia store for app settings",
+    "useMcpStore() — Pinia store for MCP server state",
+    "mcpManager.autoConnect()",
+    "mcpManager.getEnabledToolDefinitions()",
+    "mcpManager.executeTool(name, args, options)",
+    "Tauri command: quick_search",
+    "Tauri command: shortcut (global hotkey management)",
+    "Tauri command: autostart",
+    "Tauri command: window management"
+  ]
+}
