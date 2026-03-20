@@ -33,7 +33,7 @@ The database contains the following tables:
 |-------|-------------|
 | `sessions` | Conversation sessions, each identified by a UUID |
 | `messages` | Individual messages within sessions (roles: `user`, `assistant`, `system`, `tool_call`, `tool_result`) |
-| `ai_requests` | Log of each AI API request with status, token count, and duration |
+| `ai_requests` | Log of each AI API request with status (`pending`, `streaming`, `completed`, `failed`, `cancelled`), token count, and duration |
 | `providers` | Configured AI service providers |
 | `models` | Models belonging to providers, with capability metadata |
 | `settings` | Key-value store for general settings |
@@ -63,7 +63,7 @@ Three separate clear actions are available. Each requires confirmation before pr
 
 ### Clear all conversation history
 
-Deletes all sessions and their messages. Because messages have a `CASCADE` delete relationship with sessions, deleting sessions removes all associated messages and AI request records.
+Deletes all sessions and their messages. Messages have a `CASCADE` delete relationship with sessions, so all associated messages are removed automatically. AI request records use `SET NULL` on session delete, so they remain in the `ai_requests` table with a null `session_id` after this operation.
 
 **Settings → Data Management → History → Clear all conversation history**
 
@@ -75,9 +75,13 @@ Deletes all message records while keeping the session entries. Sessions will rem
 
 ### Clear AI request records
 
-Deletes the `ai_requests` log entries. Sessions and messages are not affected.
+Deletes all `ai_requests` log entries. Sessions and messages are not affected.
 
 **Settings → Data Management → History → Clear AI request records**
+
+<Note>
+  The `ai_requests` table references sessions via `SET NULL` on delete, so clearing session history leaves orphaned request records with a null `session_id`. Use this action to clean those up.
+</Note>
 
 ## Export and import
 

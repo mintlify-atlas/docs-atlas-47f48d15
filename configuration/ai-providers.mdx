@@ -14,19 +14,25 @@ TouchAI supports two provider types, matching the underlying API protocol:
 | `openai` | OpenAI Chat Completions API | OpenAI, DeepSeek, Gemini, Grok, Ollama, and any OpenAI-compatible endpoint |
 | `anthropic` | Anthropic Messages API | Anthropic Claude, MiniMax (Anthropic-compatible) |
 
-When you add a provider, TouchAI automatically appends `/v1` to the endpoint for OpenAI-type providers and uses the base URL as-is for Anthropic-type providers.
+When you add a provider, TouchAI automatically appends `/v1` to the endpoint for OpenAI-type providers and uses the base URL as-is for Anthropic-type providers. Some built-in providers (e.g. Volcengine) already include a path suffix in their endpoint — in those cases, `/v1` is still appended, so the full URL used for requests will include both suffixes. Check your provider's API documentation if requests fail.
 
 ## Built-in providers
 
-TouchAI ships with several built-in providers pre-configured with the correct endpoints. They are disabled by default — you only need to add your API key and enable the ones you want to use.
+TouchAI ships with 11 built-in providers pre-configured with the correct endpoints. **OpenAI** is enabled by default; all others are disabled until you add an API key and enable them.
 
-| Provider | Type | Endpoint |
-|----------|------|----------|
-| OpenAI | openai | `https://api.openai.com` |
-| Anthropic | anthropic | `https://api.anthropic.com` |
-| DeepSeek | openai | `https://api.deepseek.com` |
-| Gemini | openai | `https://generativelanguage.googleapis.com` |
-| Grok | openai | `https://api.x.ai` |
+| Provider | Type | Endpoint | Default state |
+|----------|------|----------|---------------|
+| OpenAI | `openai` | `https://api.openai.com` | Enabled |
+| Anthropic | `anthropic` | `https://api.anthropic.com` | Disabled |
+| DeepSeek | `openai` | `https://api.deepseek.com` | Disabled |
+| Volcengine (火山引擎) | `openai` | `https://ark.cn-beijing.volces.com/api/v3` | Disabled |
+| Gemini | `openai` | `https://generativelanguage.googleapis.com` | Disabled |
+| Grok | `openai` | `https://api.x.ai` | Disabled |
+| Tencent Hunyuan (腾讯混元) | `openai` | `https://api.hunyuan.cloud.tencent.com` | Disabled |
+| MiniMax | `anthropic` | `https://api.minimaxi.com/anthropic` | Disabled |
+| Moonshot (月之暗面) | `openai` | `https://api.moonshot.cn` | Disabled |
+| Alibaba Bailian (阿里云百炼) | `openai` | `https://dashscope.aliyuncs.com/compatible-mode` | Disabled |
+| Zhipu (智谱) | `openai` | `https://open.bigmodel.cn/api/paas` | Disabled |
 
 ## Add your first provider
 
