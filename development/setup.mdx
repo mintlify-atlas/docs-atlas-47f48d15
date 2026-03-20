@@ -1,0 +1,166 @@
+---
+title: "Development Setup"
+description: "Set up a local development environment for TouchAI from scratch."
+---
+
+## Prerequisites
+
+Before you begin, install the following tools:
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| Node.js | LTS recommended | Required by the Vue 3 frontend |
+| pnpm | 10.26.2 | Specified in `package.json` as `packageManager` |
+| Rust toolchain | stable | Install via [rustup](https://rustup.rs) |
+| Tauri platform deps | — | Platform-specific system libraries |
+
+<Info>
+  Tauri requires additional platform dependencies (WebView2 on Windows, webkit2gtk on Linux). Refer to the [Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/) for the full list.
+</Info>
+
+## Setup
+
+<Steps>
+  <Step title="Install prerequisites">
+    Install Rust via `rustup`:
+
+    ```bash
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    ```
+
+    Install pnpm:
+
+    ```bash
+    npm install -g pnpm@10.26.2
+    ```
+
+    Then follow the [Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/) for your operating system.
+  </Step>
+
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/xlgszgf/touchai.git
+    cd touchai
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    pnpm install
+    ```
+
+    This installs all Node.js dependencies. Rust crate dependencies are fetched automatically during the first build.
+  </Step>
+
+  <Step title="Run the development server">
+    ```bash
+    pnpm tauri dev
+    ```
+
+    This starts the Vite dev server on `http://localhost:1420` and launches the Tauri application with hot-module replacement.
+
+    <Note>
+      The main window starts hidden. It becomes visible when triggered via the global shortcut or system tray.
+    </Note>
+  </Step>
+
+  <Step title="Build for production">
+    ```bash
+    pnpm tauri build
+    ```
+
+    Runs `vue-tsc --noEmit && vite build` for the frontend, then compiles the Rust backend with release optimisations (`lto = "fat"`, `opt-level = "z"`, dead-code stripping). Bundles are written to `src-tauri/target/release/bundle/`.
+  </Step>
+</Steps>
+
+## Development modes
+
+### MCP Bridge mode
+
+Start the app with the optional `mcp-bridge` Cargo feature enabled for automated MCP testing:
+
+```bash
+pnpm run tauri:dev:mcp
+```
+
+This maps to `tauri dev --features mcp-bridge` and conditionally includes `tauri-plugin-mcp-bridge`.
+
+### Frontend only
+
+Run just the Vite dev server without launching the Tauri shell:
+
+```bash
+pnpm dev
+```
+
+## Database
+
+TouchAI uses Drizzle ORM with SQLite (`data/touchai.db`). The schema lives in `src/database/schema.ts` and migrations are output to `drizzle/`.
+
+<CodeGroup>
+
+```bash Generate migrations
+pnpm run db:generate
+```
+
+```bash Open Drizzle Studio
+pnpm run db:studio
+```
+
+</CodeGroup>
+
+## Testing
+
+<CodeGroup>
+
+```bash Watch mode
+pnpm test
+```
+
+```bash Single run
+pnpm run test:run
+```
+
+```bash Interactive UI
+pnpm run test:ui
+```
+
+</CodeGroup>
+
+`test:run` passes with no tests (`--passWithNoTests`), so CI does not fail on a clean checkout.
+
+## Linting and formatting
+
+<CodeGroup>
+
+```bash Lint and auto-fix (JS/TS/Vue)
+pnpm run lint
+```
+
+```bash Lint check only
+pnpm run lint:check
+```
+
+```bash Format everything (JS/TS/Vue/JSON/MD + Rust)
+pnpm run format:fix
+```
+
+```bash Format Rust only
+pnpm run format:rust:fix
+```
+
+```bash TypeScript type check
+pnpm run type:check
+```
+
+</CodeGroup>
+
+`format:fix` runs Prettier on all tracked file types and then `cargo fmt` on the Rust sources in one command.
+
+## Rust checks
+
+```bash
+pnpm run check:rust
+```
+
+Runs `cargo check --all-targets` against `src-tauri/Cargo.toml` without producing a binary — useful for fast compile-error feedback.

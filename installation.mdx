@@ -1,0 +1,143 @@
+---
+title: "Installation"
+description: "Download and install TouchAI on macOS, Windows, or Linux, or build it from source."
+---
+
+## Install a pre-built release
+
+Download the latest installer from the [TouchAI GitHub releases page](https://github.com/TouchAI-org/TouchAI/releases).
+
+<Tabs>
+  <Tab title="macOS">
+    1. Download the `.dmg` file from the releases page.
+    2. Open the `.dmg` and drag **TouchAI** to your **Applications** folder.
+    3. Launch TouchAI from Applications or Spotlight.
+    4. On first launch, macOS may prompt you to confirm opening a downloaded app — click **Open**.
+
+    <Note>
+      TouchAI runs as a system tray application. After launch, the app window is hidden by default. Look for the TouchAI icon in the menu bar.
+    </Note>
+  </Tab>
+
+  <Tab title="Windows">
+    1. Download the `.msi` or `.exe` installer from the releases page.
+    2. Run the installer and follow the on-screen instructions.
+    3. TouchAI launches automatically after installation and appears in the system tray.
+
+    <Note>
+      Windows may show a SmartScreen warning for unsigned installers. Click **More info → Run anyway** to proceed.
+    </Note>
+  </Tab>
+
+  <Tab title="Linux">
+    Choose the package format that matches your distribution:
+
+    **AppImage (universal)**
+    ```bash
+    chmod +x TouchAI_*.AppImage
+    ./TouchAI_*.AppImage
+    ```
+
+    **Debian / Ubuntu (`.deb`)**
+    ```bash
+    sudo dpkg -i touchai_*.deb
+    ```
+
+    <Warning>
+      On Linux, the global shortcut feature requires a compositor that supports global key grabs. Wayland support may vary by desktop environment.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## Build from source
+
+Building from source gives you the latest development code and full control over the build.
+
+### Prerequisites
+
+Before building, install the following tools:
+
+| Tool | Version | Purpose |
+|---|---|---|
+| [Node.js](https://nodejs.org) | 18 or later | JavaScript runtime |
+| [pnpm](https://pnpm.io) | 10.x (see `packageManager` in `package.json`) | Package manager |
+| [Rust toolchain](https://rustup.rs) | stable | Tauri backend compiler |
+
+Install Rust via `rustup`:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Install pnpm via npm:
+
+```bash
+npm install -g pnpm
+```
+
+### Clone and install dependencies
+
+```bash
+git clone https://github.com/TouchAI-org/TouchAI.git
+cd TouchAI
+pnpm install
+```
+
+### Run in development mode
+
+<CodeGroup>
+
+```bash Standard
+pnpm tauri dev
+```
+
+```bash With MCP bridge (automation testing)
+pnpm run tauri:dev:mcp
+```
+
+</CodeGroup>
+
+This starts the Vite dev server on `http://localhost:1420` and launches the Tauri window with hot-reload enabled.
+
+### Build for production
+
+```bash
+pnpm tauri build
+```
+
+The build process:
+1. Compiles the Vue 3 frontend with Vite (`pnpm build`).
+2. Compiles the Rust backend with release optimizations.
+3. Bundles a signed, platform-native installer into `src-tauri/target/release/bundle/`.
+
+<Note>
+  The release profile uses `lto = "fat"`, `opt-level = "z"`, and `strip = true` for minimal binary size. Expect build times of several minutes on first compile.
+</Note>
+
+### Optional: run type checks and linting
+
+<CodeGroup>
+
+```bash TypeScript type check
+pnpm type:check
+```
+
+```bash Lint (with auto-fix)
+pnpm lint
+```
+
+```bash Rust check
+pnpm check:rust
+```
+
+</CodeGroup>
+
+## First launch
+
+Regardless of how you installed TouchAI, the first-launch flow is the same:
+
+1. The app starts minimized to the **system tray** (`skipTaskbar: true` is set by default).
+2. Press <kbd>Alt</kbd>+<kbd>Space</kbd> to open the overlay, or right-click the tray icon to access settings.
+3. Configure an AI provider in **Settings → AI Providers** before sending your first query.
+
+See the [Quickstart](/quickstart) for a guided walkthrough of the first-run experience.

@@ -1,0 +1,130 @@
+---
+title: "Data Management"
+description: "Understand where TouchAI stores data, how to manage conversation history, and how to export and import backups."
+---
+
+TouchAI stores all data locally in a SQLite database. Navigate to **Settings → Data Management** to view statistics, clear history, and manage backups.
+
+## Database location
+
+TouchAI uses a single SQLite database file. The path is resolved at runtime using Tauri's app data directory:
+
+```
+<APP_DATA_DIR>/data/touchai.db
+```
+
+The exact path depends on your operating system:
+
+| Platform | Typical path |
+|----------|--------------|
+| Windows | `%APPDATA%\TouchAI\data\touchai.db` |
+| macOS | `~/Library/Application Support/TouchAI/data/touchai.db` |
+| Linux | `~/.local/share/TouchAI/data/touchai.db` |
+
+The database uses WAL (Write-Ahead Logging) mode for concurrent read/write access and a 5-second busy timeout.
+
+## Schema overview
+
+TouchAI uses [Drizzle ORM](https://orm.drizzle.team) for schema management and migrations. The schema is defined in `src/database/schema.ts` and migrations live in `drizzle/`.
+
+The database contains the following tables:
+
+| Table | Description |
+|-------|-------------|
+| `sessions` | Conversation sessions, each identified by a UUID |
+| `messages` | Individual messages within sessions (roles: `user`, `assistant`, `system`, `tool_call`, `tool_result`) |
+| `ai_requests` | Log of each AI API request with status, token count, and duration |
+| `providers` | Configured AI service providers |
+| `models` | Models belonging to providers, with capability metadata |
+| `settings` | Key-value store for general settings |
+| `mcp_servers` | MCP server configurations |
+| `mcp_tools` | Tools registered from MCP servers |
+| `mcp_tool_logs` | Execution log of each MCP tool call |
+| `llm_metadata` | Built-in capability metadata for known model IDs |
+| `statistics` | App-level statistics (e.g. last metadata update timestamp) |
+| `touchai_meta` | Internal app metadata, including the `app_id` identity marker |
+| `quick_search_click_stats` | Click frequency data used to rank quick search results |
+
+## Data statistics
+
+The Data Management page shows a summary of your stored data:
+
+- **Conversation sessions** — total number of sessions
+- **Total messages** — total messages across all sessions
+- **AI request count** — total number of API requests made
+
+## Clearing history
+
+Three separate clear actions are available. Each requires confirmation before proceeding, and the action cannot be undone.
+
+<Warning>
+  Clearing data is permanent. Export a backup before clearing if you want to keep a copy.
+</Warning>
+
+### Clear all conversation history
+
+Deletes all sessions and their messages. Because messages have a `CASCADE` delete relationship with sessions, deleting sessions removes all associated messages and AI request records.
+
+**Settings → Data Management → History → Clear all conversation history**
+
+### Clear all messages
+
+Deletes all message records while keeping the session entries. Sessions will remain but appear empty.
+
+**Settings → Data Management → History → Clear all messages**
+
+### Clear AI request records
+
+Deletes the `ai_requests` log entries. Sessions and messages are not affected.
+
+**Settings → Data Management → History → Clear AI request records**
+
+## Export and import
+
+You can back up and restore the entire database as a `.db` file.
+
+### Export
+
+1. Go to **Settings → Data Management → Settings backup**.
+2. Click **Export**.
+3. Choose a location to save the backup file. The file is named `touchai-backup-<timestamp>.db`.
+
+Before copying, TouchAI flushes the WAL log (`PRAGMA wal_checkpoint(TRUNCATE)`) to ensure the backup contains all recent writes.
+
+### Import
+
+1. Go to **Settings → Data Management → Settings backup**.
+2. Click **Import**.
+3. Select a `.db` backup file.
+4. Choose an import mode:
+
+| Mode | Behavior |
+|------|----------|
+| **Chat only** | Merges conversation sessions, messages, and AI request records. Does not touch settings, providers, or models. |
+| **Full (overwrite settings)** | Overwrites settings, providers, models, and statistics from the backup, then merges conversation data. |
+
+After a successful import, the app restarts automatically to apply the changes.
+
+<Note>
+  TouchAI automatically creates a temporary backup of the current database before importing. If the import fails, the database is restored to its pre-import state.
+</Note>
+
+<Warning>
+  You cannot import a database that was created by a newer version of TouchAI. If the backup file contains migrations that the current app does not recognize, the import will fail with a version compatibility error.
+</Warning>
+
+### Backup file validation
+
+Imported files must be valid TouchAI databases. TouchAI checks for:
+1. The presence of the `touchai_meta` table.
+2. An `app_id` entry with the value `touchai`.
+
+Files that fail validation are rejected before any data is modified.
+
+## Model metadata
+
+TouchAI maintains a local database of known model capabilities (`llm_metadata` table) used to automatically populate model settings when you add or refresh models. You can update this database from a remote source:
+
+**Settings → Data Management → Data update → Model metadata database → Update**
+
+The timestamp of the last update is shown below the button.

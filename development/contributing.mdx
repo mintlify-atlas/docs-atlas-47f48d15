@@ -1,0 +1,202 @@
+---
+title: "Contributing"
+description: "Guidelines for contributing code to TouchAI, including branch workflow, commit conventions, and code style."
+---
+
+TouchAI welcomes contributions. This page explains the workflow, code-style rules, and commit conventions that keep the codebase consistent.
+
+## Contribution workflow
+
+<Steps>
+  <Step title="Fork and clone">
+    Fork the repository on GitHub, then clone your fork:
+
+    ```bash
+    git clone https://github.com/<your-username>/touchai.git
+    cd touchai
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    pnpm install
+    ```
+
+    This also runs `husky` via the `prepare` lifecycle script, which installs the pre-commit hooks.
+  </Step>
+
+  <Step title="Create a feature branch">
+    Branch off `main` (or the current development branch) with a descriptive name:
+
+    ```bash
+    git checkout -b feat/my-new-feature
+    # or
+    git checkout -b fix/issue-123
+    ```
+  </Step>
+
+  <Step title="Make your changes">
+    Write code, add tests where appropriate, and verify everything passes:
+
+    ```bash
+    pnpm run type:check      # TypeScript
+    pnpm run lint:check      # ESLint
+    pnpm run format:check    # Prettier
+    pnpm run check:rust      # Rust compile check
+    pnpm run test:run        # Vitest
+    ```
+  </Step>
+
+  <Step title="Commit your changes">
+    Commits are validated by `commitlint` using the Conventional Commits specification. See the [commit format](#commit-message-format) section below.
+
+    ```bash
+    git add .
+    git commit -m "feat(search): add keyboard navigation to results list"
+    ```
+  </Step>
+
+  <Step title="Open a pull request">
+    Push your branch and open a PR against the upstream `main` branch:
+
+    ```bash
+    git push origin feat/my-new-feature
+    ```
+
+    Describe what the PR changes and reference any related issues.
+  </Step>
+</Steps>
+
+## Commit message format
+
+TouchAI uses the **Conventional Commits** specification enforced by `@commitlint/config-conventional`.
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Types
+
+| Type | When to use |
+|------|-------------|
+| `feat` | A new feature |
+| `fix` | A bug fix |
+| `docs` | Documentation changes only |
+| `style` | Formatting changes that do not affect logic |
+| `refactor` | Code restructuring with no feature or bug change |
+| `perf` | Performance improvements |
+| `test` | Adding or updating tests |
+| `chore` | Build process, tooling, or dependency updates |
+| `revert` | Reverting a previous commit |
+
+### Examples
+
+```bash
+# New feature
+git commit -m "feat(mcp): add SSE transport support"
+
+# Bug fix with scope
+git commit -m "fix(window): correct resize calculation on HiDPI displays"
+
+# Documentation update
+git commit -m "docs: add architecture overview page"
+
+# Breaking change (add ! after type/scope)
+git commit -m "feat(settings)!: remove legacy provider config format"
+
+# Chore with body
+git commit -m "chore(deps): upgrade tauri to 2.8.0"
+```
+
+<Warning>
+  Commits that do not follow the Conventional Commits format will be rejected by the `commit-msg` Husky hook.
+</Warning>
+
+## Pre-commit hooks
+
+Husky runs `lint-staged` on every commit. The following checks run automatically on staged files:
+
+| File pattern | Actions |
+|--------------|---------|
+| `*.{js,ts,vue}` | `eslint --fix` then `prettier --write` |
+| `*.{json,md,html,css}` | `prettier --write` |
+| `src-tauri/**/*.rs` | `cargo fmt --manifest-path src-tauri/Cargo.toml` |
+
+You do not need to run formatters manually before committing — lint-staged handles it.
+
+## Code style
+
+### TypeScript / Vue
+
+Code style is enforced by **ESLint** and **Prettier**. The active configuration:
+
+- ESLint extends `eslint:recommended`, `typescript-eslint/recommended`, `vue/flat/recommended`, and `prettier/recommended`
+- Import order is enforced by `eslint-plugin-simple-import-sort` (`simple-import-sort/imports` and `simple-import-sort/exports` are both `error`)
+- `vue/no-v-html` is disabled to allow trusted HTML rendering
+
+Prettier settings (from `.prettierrc`):
+
+| Option | Value |
+|--------|-------|
+| `semi` | `true` |
+| `tabWidth` | `4` |
+| `singleQuote` | `true` |
+| `trailingComma` | `"es5"` |
+| `printWidth` | `100` |
+| `endOfLine` | `"lf"` |
+| `vueIndentScriptAndStyle` | `true` |
+| Plugin | `prettier-plugin-tailwindcss` |
+
+Run the formatter manually:
+
+```bash
+pnpm run format:fix
+```
+
+### Rust
+
+All Rust code must be formatted with `rustfmt` using the project manifest:
+
+```bash
+cargo fmt --manifest-path src-tauri/Cargo.toml --all
+```
+
+Or via the npm script:
+
+```bash
+pnpm run format:rust:fix
+```
+
+<Tip>
+  Running `pnpm run format:fix` formats both the TypeScript/Vue sources and all Rust files in one command.
+</Tip>
+
+## Testing
+
+TouchAI uses **Vitest** for frontend unit and integration tests.
+
+<CodeGroup>
+
+```bash Watch mode (development)
+pnpm test
+```
+
+```bash Single pass (CI)
+pnpm run test:run
+```
+
+```bash Browser UI
+pnpm run test:ui
+```
+
+</CodeGroup>
+
+New features should include corresponding tests where practical. `test:run` is used in CI and will pass even when no test files exist (`--passWithNoTests`).
+
+## License
+
+TouchAI is released under the **GNU General Public License v3.0**. By contributing you agree that your changes will be distributed under the same licence.

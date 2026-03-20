@@ -1,0 +1,74 @@
+---
+title: "Quick Search"
+description: "Icon-grid panel that searches past sessions and local shortcuts as you type, appearing below the search bar when no conversation is active."
+---
+
+Quick Search is the `QuickSearchPanel` component that slides in below the SearchBar while you are typing and no conversation is open. It searches your indexed shortcuts (applications, files, and recent sessions) in real time and lets you open a result or continue into a full AI query.
+
+## When Quick Search appears
+
+The panel opens automatically when **all** of the following conditions are met:
+
+- No conversation is currently active (the conversation history is empty).
+- The search bar has non-empty text.
+- The input is single-line (not multi-line).
+- No model override tag is set in the search bar.
+- No attachments are staged.
+- The model picker dropdown is not open.
+
+If any condition is no longer satisfied — for example, you submit a query and a conversation starts — the panel closes immediately.
+
+## What it searches
+
+Quick Search queries a native index of **shortcuts** via the `native.quickSearch.searchShortcuts` API. The index includes:
+
+- System applications
+- Files and folders known to the OS
+- Recent items
+
+Results are ranked by a combination of native relevance and a click-frequency score stored in a local SQLite table. Items you open more often appear higher for the same query.
+
+Each search is debounced at **80 ms** and returns at most **60 results** per query. Matched characters in each result name are highlighted in the grid.
+
+## Result grid
+
+Results are displayed as an icon grid. Each cell is 88 × 88 px and shows:
+
+- A file/application icon (or image thumbnail for image files)
+- The item name, with matched query characters highlighted
+
+Icons and thumbnails are loaded asynchronously after the grid renders to avoid blocking the layout.
+
+## Keyboard navigation
+
+| Key | Action |
+|-----|--------|
+| <kbd>ArrowDown</kbd> | Open Quick Search / move highlight down |
+| <kbd>ArrowUp</kbd> / <kbd>ArrowDown</kbd> / <kbd>ArrowLeft</kbd> / <kbd>ArrowRight</kbd> | Move the highlighted cell through the grid |
+| <kbd>Enter</kbd> (item highlighted) | Open the highlighted item and hide the window |
+| <kbd>Enter</kbd> (no item highlighted) | Close Quick Search and submit the query to the AI |
+| <kbd>Escape</kbd> | Close Quick Search (focus returns to search bar) |
+
+<Tip>
+Press <kbd>ArrowDown</kbd> from the search bar to enter the grid without typing anything extra. The first press moves the selection to the first item.
+</Tip>
+
+## Opening a result
+
+Clicking or pressing <kbd>Enter</kbd> on a highlighted result:
+
+1. Records a click in the local stats table (used for future ranking).
+2. Hides the TouchAI window.
+3. Opens the item using the OS default handler via `openPath`.
+
+## Closing behaviour
+
+The panel closes automatically when:
+
+- The conversation history becomes non-empty (a query was submitted).
+- The query text is cleared.
+- A model override or attachment is added.
+- The window loses focus (and is not pinned).
+- <kbd>Escape</kbd> is pressed.
+
+When the parent page sets `open` to `false` directly (e.g., when a conversation starts), the panel also cancels any in-flight search requests and resets its internal async state to prevent stale results from appearing.

@@ -1,0 +1,168 @@
+---
+title: "MCP Tools"
+description: "Connect MCP (Model Context Protocol) servers to give models the ability to call tools, with a configurable agent loop and full call logging."
+---
+
+TouchAI integrates the Model Context Protocol (MCP) to let AI models call external tools during a response. When a model decides it needs to use a tool, TouchAI executes the call, feeds the result back to the model, and continues until the model produces a final text response or the iteration limit is reached.
+
+## How the agent loop works
+
+<Steps>
+  <Step title="Query submitted">
+    You submit a query. If the active model has `tool_call` enabled, TouchAI collects all enabled tool definitions from connected MCP servers and includes them in the request.
+  </Step>
+  <Step title="Model streams a response">
+    The model streams its response. If it decides to call one or more tools, the stream ends with `finishReason: "tool_calls"` or `"tool_use"` and a list of `toolCalls`.
+  </Step>
+  <Step title="Tools execute in parallel">
+    TouchAI resolves each tool call to its server using the namespaced name (see [Tool namespacing](#tool-namespacing)), then executes all tool calls for that iteration in parallel. Each call races against the server's configured `tool_timeout`.
+  </Step>
+  <Step title="Results feed back to the model">
+    Tool results are appended to the message history as `role: "tool"` messages and a new streaming request is sent to the model.
+  </Step>
+  <Step title="Loop continues or exits">
+    The loop repeats until the model returns a response without tool calls, the request is cancelled, or `mcp_max_iterations` is reached. If the iteration limit is hit, a warning is appended to the response text.
+  </Step>
+</Steps>
+
+<Note>
+The agent loop only runs when the model's `tool_call` flag is set to `1`. Models without tool call support receive no tool definitions and execute a single streaming pass.
+</Note>
+
+## Tool namespacing
+
+To avoid name collisions when multiple MCP servers expose tools with the same name, TouchAI prefixes every tool name with the server's database ID before sending it to the model:
+
+```
+mcp__{serverId}__{toolName}
+```
+
+For example, a tool named `read_file` on server ID 3 becomes `mcp__3__read_file`. When the model requests a call to `mcp__3__read_file`, TouchAI parses the prefix to identify the server and the original tool name before executing.
+
+## Server connection status
+
+MCP servers go through the following status states:
+
+| Status | Meaning |
+|--------|---------|
+| `disconnected` | Default state on startup, or after an explicit disconnect |
+| `connecting` | Connection attempt is in progress |
+| `connected` | Successfully connected; tools are available |
+| `error` | Connection failed; last error message is stored |
+
+On startup, TouchAI calls `mcpManager.autoConnect()`, which sequentially connects all enabled servers. Servers are connected one at a time (not in parallel) to avoid concurrent SQLite writes. After a successful connection, the server's tool list is synced to the local database.
+
+<Info>
+Status updates are broadcast as `MCP_STATUS` events so all open windows (e.g., the settings window) stay in sync without polling.
+</Info>
+
+## Supported transport types
+
+MCP servers can be connected over three transport types, defined in the Rust backend:
+
+```rust
+pub enum TransportType {
+    Stdio,
+    Sse,
+    Http,
+}
+```
+
+| Transport | Use case |
+|-----------|----------|
+| `stdio` | Local process launched by TouchAI (command + args + env) |
+| `sse` | Remote server over Server-Sent Events (URL + optional headers) |
+| `http` | Remote server over HTTP (URL + optional headers) |
+
+## Adding an MCP server
+
+<Steps>
+  <Step title="Open MCP Tools settings">
+    Go to Settings → MCP Tools.
+  </Step>
+  <Step title="Add a new server">
+    Click the add button and fill in the server details: name, transport type, and the transport-specific fields (command/args for stdio, URL for SSE/HTTP).
+  </Step>
+  <Step title="Enable the server">
+    Toggle the server to enabled. TouchAI will attempt to connect immediately.
+  </Step>
+  <Step title="Verify the connection">
+    The status badge updates to `connected` when the handshake succeeds. The tool list is populated automatically.
+  </Step>
+  <Step title="Enable or disable individual tools">
+    Expand the server to see all discovered tools. Each tool can be individually enabled or disabled. TouchAI preserves per-tool enable/disable preferences when the server reconnects.
+  </Step>
+</Steps>
+
+## The mcp_max_iterations setting
+
+The `mcp_max_iterations` setting (Settings → General) controls how many times the agent loop can iterate within a single request.
+
+| Property | Value |
+|----------|-------|
+| Default | `10` |
+| Minimum | `1` |
+| Maximum | `50` |
+
+Values outside this range are clamped automatically. Setting a lower value reduces the risk of runaway loops but may prevent complex tasks from completing.
+
+## Tool call logs
+
+Every tool call is logged to the local SQLite database and displayed inline in the conversation as a collapsible `ToolCallItem`. Each log entry contains:
+
+| Field | Description |
+|-------|-------------|
+| Tool name | The original (non-namespaced) tool name |
+| Server name | The MCP server that owns the tool |
+| Arguments | The parsed JSON arguments sent to the tool |
+| Result | The text output returned by the tool |
+| Status | `pending` → `success` or `error` |
+| Duration | Execution time in milliseconds |
+
+Click any tool call entry in the conversation to expand and inspect the full arguments and result.
+
+```typescript
+// Example tool call event emitted during streaming
+{
+  type: 'call_start',
+  callId: 'call_abc123',
+  toolName: 'read_file',          // original name
+  namespacedName: 'mcp__3__read_file',
+  serverId: 3,
+  arguments: { path: '/home/user/notes.txt' }
+}
+
+// After execution
+{
+  type: 'call_end',
+  callId: 'call_abc123',
+  result: 'File contents...',
+  isError: false,
+  durationMs: 42
+}
+```
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Why are my tools not showing up in the model's requests?">
+    Tools are only sent to the model if:
+    1. The model has `tool_call` set to `1`.
+    2. The server status is `connected` at the time of the request.
+    3. The individual tool is enabled in the MCP Tools settings.
+
+    Check that the server shows a `connected` status badge. If it shows `error`, hover over it to see the last error message.
+  </Accordion>
+  <Accordion title="What happens if a tool call times out?">
+    Each tool call races against the server's `tool_timeout` value (configured per server). If the timeout fires first, the tool result is set to `Tool execution timed out after {timeout}ms` with `isError: true`, and the model receives that error as the tool result. The loop continues.
+  </Accordion>
+  <Accordion title="Can I stop a running agent loop?">
+    Yes. Press <kbd>Escape</kbd> while the response is streaming to cancel the request. The `AbortSignal` is forwarded to every pending tool call, so in-progress tool executions are cancelled too.
+  </Accordion>
+  <Accordion title="What if a tool name on one server conflicts with a tool on another server?">
+    TouchAI uses namespaced tool names (`mcp__{serverId}__{toolName}`) so name collisions between servers are impossible. Each server's tools are fully isolated by their unique database ID.
+  </Accordion>
+  <Accordion title="Are tool preferences preserved when a server reconnects?">
+    Yes. When a server reconnects and its tool list is re-synced, TouchAI maps each incoming tool name to any existing enabled/disabled preference stored in the database. New tools default to enabled.
+  </Accordion>
+</AccordionGroup>

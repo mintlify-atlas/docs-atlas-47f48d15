@@ -1,0 +1,84 @@
+---
+title: "Keyboard Shortcuts"
+description: "Global and in-app keyboard shortcuts for TouchAI."
+---
+
+TouchAI is designed to be operated almost entirely from the keyboard. There are two categories of shortcuts: the global shortcut that works system-wide, and in-app shortcuts that work when the TouchAI window is focused.
+
+## Global shortcut
+
+The global shortcut toggles the TouchAI overlay from anywhere on your desktop.
+
+| Shortcut | Action |
+|----------|---------|
+| `Alt+Space` *(default)* | Show or hide the TouchAI overlay |
+
+You can change this shortcut in **Settings → General → Global shortcut**. The shortcut is registered with the operating system and works even when TouchAI is not in the foreground.
+
+To change the global shortcut:
+
+1. Go to **Settings → General**.
+2. Click the shortcut input field.
+3. Press the new key combination (using Ctrl, Alt, or Shift as modifiers).
+4. Click outside the field to save.
+
+See [General Settings](/configuration/general-settings) for more detail.
+
+## In-app shortcuts
+
+These shortcuts are active when the TouchAI window is focused.
+
+### Input and submission
+
+| Shortcut | Action | Context |
+|----------|--------|---------|
+| `Enter` | Submit the current query to the AI | Input field, any text |
+| `Shift+Enter` | Insert a newline without submitting | Input field |
+| `ArrowUp` | Submit the current query (single-line input only) | Input field, single-line mode |
+
+### Navigation and UI
+
+| Shortcut | Action | Context |
+|----------|--------|---------|
+| `Escape` | Close model dropdown → cancel active request → clear model selection → hide window or clear conversation (in priority order) | Anywhere |
+| `Tab` | Move focus to the conversation panel | When conversation history is present |
+| `ArrowDown` | Open quick search panel (when input is empty or matches quick search criteria) | Input field |
+
+### Model selection
+
+| Shortcut | Action | Context |
+|----------|--------|---------|
+| `@` | Open the model selector dropdown | Input field |
+| `ArrowUp` / `ArrowDown` | Navigate model list | Model dropdown open |
+| `Enter` | Select highlighted model | Model dropdown open |
+| `Escape` | Close model dropdown | Model dropdown open |
+| `Backspace` | Close model dropdown | Model dropdown open |
+
+You can also type in the model selector to filter the list by model name or provider.
+
+### Quick search panel
+
+The quick search panel shows file and application suggestions based on your input.
+
+| Shortcut | Action | Context |
+|----------|--------|---------|
+| `ArrowDown` | Open quick search / move selection down | Input field / quick search open |
+| `ArrowUp` / `ArrowLeft` / `ArrowRight` | Navigate items | Quick search item highlighted |
+| `Enter` | Open highlighted item | Quick search item highlighted |
+| `Enter` | Close quick search and submit query | Quick search open, no item highlighted |
+
+### During AI response
+
+| Shortcut | Action | Context |
+|----------|--------|---------|
+| `Escape` | Cancel the active AI request | Request in progress |
+
+### Clearing conversation
+
+| Shortcut | Action | Context |
+|----------|--------|---------|
+| `Escape` | Clear conversation history | Conversation present, input empty, no active request |
+
+<Note>
+  The `Escape` key uses a priority order: it first closes any open dropdown, then cancels an active request, then clears model selection, then hides the window (if input is empty and there is no conversation), and finally clears the conversation.
+</Note>

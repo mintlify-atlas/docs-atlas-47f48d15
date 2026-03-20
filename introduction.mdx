@@ -1,0 +1,72 @@
+---
+title: "Introduction"
+description: "TouchAI — a minimalist desktop AI assistant built with Tauri. AI at your fingertips, one shortcut away."
+---
+
+<img
+  className="block"
+  src="https://media.brand.dev/5ffd6ce4-2434-4b4b-920a-f8cacac8b48b.svg"
+  alt="TouchAI"
+  style={{ maxWidth: "200px", marginBottom: "2rem" }}
+/>
+
+## What is TouchAI?
+
+TouchAI is a minimalist desktop AI assistant built with [Tauri](https://tauri.app), Vue 3, and Rust. It lives quietly in your system tray and appears instantly with a global keyboard shortcut — giving you AI access without interrupting your workflow.
+
+Press <kbd>Alt</kbd>+<kbd>Space</kbd> anywhere on your desktop, ask your question, and get a streaming AI response — then dismiss the window and continue working.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get TouchAI running in under 5 minutes
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    Download and install for your platform
+  </Card>
+  <Card title="AI Search" icon="magnifying-glass" href="/features/ai-search">
+    Learn how the AI search overlay works
+  </Card>
+  <Card title="MCP Tools" icon="wrench" href="/features/mcp-tools">
+    Extend TouchAI with Model Context Protocol tools
+  </Card>
+</CardGroup>
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="Instant overlay" icon="bolt">
+    A transparent, borderless floating window summoned by a global hotkey. No app switching required.
+  </Card>
+  <Card title="Multi-provider AI" icon="brain">
+    Connect OpenAI, Anthropic Claude, or any OpenAI-compatible endpoint — including local models.
+  </Card>
+  <Card title="Streaming responses" icon="wave-sine">
+    Responses stream in real time with full Markdown rendering, code highlighting, and math support.
+  </Card>
+  <Card title="MCP agent tools" icon="network-wired">
+    Integrate Model Context Protocol servers for agentic workflows — file access, web search, and more.
+  </Card>
+  <Card title="Conversation history" icon="clock-rotate-left">
+    All sessions persist locally in a SQLite database. Search past conversations instantly.
+  </Card>
+  <Card title="Multimodal input" icon="paperclip">
+    Attach images and files to your queries for vision-capable models.
+  </Card>
+</CardGroup>
+
+## Tech stack
+
+TouchAI is built with a modern, performance-focused stack:
+
+| Layer | Technology |
+|---|---|
+| Frontend | Vue 3 + TypeScript + TailwindCSS |
+| Desktop shell | Tauri 2.0 (Rust) |
+| Build tools | Vite + pnpm |
+| Database | SQLite via Drizzle ORM |
+| Editor | Monaco Editor |
+| State management | Pinia |
+
+## License
+
+TouchAI is open-source software released under the [GNU General Public License v3.0](https://github.com/TouchAI-org/TouchAI/blob/main/COPYING).

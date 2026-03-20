@@ -1,0 +1,160 @@
+---
+title: "Architecture"
+description: "Overview of the TouchAI two-layer architecture: Vue 3 frontend and Tauri Rust backend."
+---
+
+TouchAI follows a strict two-layer architecture. The **Vue 3 frontend** handles all UI rendering and business logic visible to the user. The **Tauri Rust backend** owns OS integration — global shortcuts, window management, system tray, autostart, file system access, and MCP client orchestration. The two layers communicate exclusively through Tauri's IPC command system.
+
+## Layer overview
+
+| Layer | Technology | Responsibility |
+|-------|------------|----------------|
+| Frontend | Vue 3 · TypeScript · Pinia · Drizzle ORM | UI, AI service calls, state management, local DB |
+| Backend | Rust · Tauri 2 | OS APIs, window lifecycle, MCP client, shortcuts |
+| IPC boundary | Tauri commands (`invoke`) | Type-safe bridge between the two layers |
+| Persistence | SQLite via `tauri-plugin-sql` | Chat history, settings, MCP server configs |
+
+## Frontend (`src/`)
+
+### Views (`src/views/`)
+
+Each top-level view maps to a dedicated Tauri window or overlay panel.
+
+| View | Purpose |
+|------|---------|
+| `SearchView/` | Main command-bar window (750 × 60 px, expands to max 700 px height) |
+| `SettingsView/` | Application settings and MCP server management |
+| `PopupView/` | Context-aware inline popup for selected text |
+| `TrayView/` | Lightweight panel anchored to the system-tray icon |
+
+### Services (`src/services/`)
+
+Services are singleton classes or composable modules that encapsulate domain logic and Tauri API calls.
+
+| Service | Responsibility |
+|---------|----------------|
+| `AiService/` | Manages the AI provider connection, streams completions, and runs the agent loop for MCP tool execution |
+| `EventService/` | Tauri event bus wrapper — enables cross-window messaging |
+| `LoggerService/` | Structured logging layer over `tauri-plugin-log` |
+| `NativeService/` | Clipboard, file system, and other native OS helpers |
+| `PopupService/` | Controls the lifecycle and positioning of the popup window |
+| `StartupService/` | Bootstraps the application on first load (initial settings, shortcut registration) |
+
+### Stores (`src/stores/`)
+
+Pinia is used for reactive global state. Two stores are defined:
+
+- **`settings.ts`** — persisted user preferences (AI provider, model, theme, shortcut)
+- **`mcp.ts`** — runtime MCP server list and connection status
+
+### Other frontend modules
+
+| Directory | Contents |
+|-----------|----------|
+| `src/components/` | Shared, reusable UI components built with Reka UI and TailwindCSS v4 |
+| `src/composables/` | Vue composables for shared reactive logic |
+| `src/database/` | Drizzle ORM schema (`schema.ts`) and query helpers |
+| `src/router/` | Vue Router configuration mapping routes to views |
+| `src/lib/` | Low-level utilities and third-party library wrappers |
+| `src/utils/` | Pure helper functions |
+
+### Path aliases
+
+Vite resolves short import paths defined in `vite.config.ts`:
+
+```typescript
+'@'           → src/
+'@components' → src/components/
+'@composables' → src/composables/
+'@database'   → src/database/
+'@services'   → src/services/
+'@styles'     → src/styles/
+'@types'      → src/types/
+'@utils'      → src/utils/
+```
+
+## Backend (`src-tauri/src/`)
+
+### Commands (`src-tauri/src/commands/`)
+
+Tauri IPC command handlers — each file exposes one or more `#[tauri::command]` functions callable from the frontend via `invoke()`.
+
+| File | Exposed commands |
+|------|------------------|
+| `autostart.rs` | Enable / disable OS autostart |
+| `mcp.rs` | Start, stop, and query MCP server connections |
+| `paths.rs` | Resolve app data and config directory paths |
+| `quick_search.rs` | Drive the quick-search provider |
+| `shortcut.rs` | Register and update the global keyboard shortcut |
+| `window.rs` | Show, hide, and reposition application windows |
+
+### Core (`src-tauri/src/core/`)
+
+Domain logic that the command handlers delegate to.
+
+| Module | Contents |
+|--------|----------|
+| `mcp/` | `client_manager.rs` — pool of active MCP client connections; `client.rs` — single-session MCP client over stdio, SSE, or streamable HTTP; `types.rs` — shared MCP types |
+| `search/` | `manager.rs` — search orchestrator; `assets.rs` — indexed asset catalogue; `provider_everything.rs` — Everything SDK integration; `types.rs` — result types |
+| `system/` | `autostart.rs`, `shortcut.rs`, `paths.rs`, `logging.rs`, `assets.rs` — OS-level helpers |
+| `window/` | Sub-modules for `popup/`, `search/`, `settings/`, `tray/` window controllers plus `resize.rs` for dynamic height adjustment |
+| `setup.rs` | Tauri app initialisation — plugin registration and startup sequence |
+
+## Key architectural patterns
+
+### Tauri IPC
+
+The frontend never calls OS APIs directly. Every privileged operation goes through a typed `invoke()` call:
+
+```typescript
+import { invoke } from '@tauri-apps/api/core'
+
+const result = await invoke<string>('get_app_data_dir')
+```
+
+On the Rust side the corresponding handler is declared with `#[tauri::command]` and registered in `setup.rs`.
+
+### Agent loop (MCP tool execution)
+
+`AiService` implements a multi-turn agent loop: it sends a user message to the AI provider, receives a response that may contain tool-call requests, forwards those calls to the appropriate MCP server via `NativeService` / the `mcp` command, collects results, and feeds them back into the next completion turn until the model returns a final text response.
+
+### Cross-window events
+
+Tauri supports multiple independent webview windows. `EventService` wraps `@tauri-apps/api/event` to emit and listen for named events, allowing `SearchView`, `PopupView`, and `TrayView` to stay in sync without sharing a process.
+
+### Persistence
+
+Drizzle ORM generates SQL migrations from `src/database/schema.ts`. At runtime `tauri-plugin-sql` executes queries against the SQLite database at `data/touchai.db`. The Drizzle `sqlite` dialect is used; no server-side database is required.
+
+## Window configuration
+
+The main window is defined in `src-tauri/tauri.conf.json`:
+
+| Property | Value | Effect |
+|----------|-------|--------|
+| `width` / `minWidth` | 750 px | Fixed horizontal size |
+| `height` / `minHeight` | 60 px | Collapsed (search-bar only) state |
+| `maxHeight` | 700 px | Expanded (with results/chat) state |
+| `transparent` | `true` | Frameless, background rendered by Vue |
+| `decorations` | `false` | No OS window chrome |
+| `shadow` | `false` | Shadow drawn in CSS |
+| `alwaysOnTop` | `true` | Floats above all other applications |
+| `skipTaskbar` | `true` | Hidden from taskbar / dock |
+| `visible` | `false` | Starts hidden; shown by shortcut or tray |
+| `center` | `true` | Initially positioned at screen centre |
+
+The `window` core module (`src-tauri/src/core/window/resize.rs`) dynamically adjusts the height between the minimum and maximum bounds as the content grows.
+
+## Build chunks
+
+Vite splits the frontend into named chunks to keep initial load fast:
+
+| Chunk | Contents |
+|-------|----------|
+| `vendor-framework` | vue, vue-router, pinia |
+| `vendor-ui` | reka-ui, vue-sonner |
+| `vendor-ai` | openai, @anthropic-ai/sdk |
+| `vendor-markdown` | markstream-vue, markdown-it-emoji |
+| `vendor-diagrams` | mermaid, katex |
+| `vendor-monaco` | monaco-editor |
+| `vendor-tauri` | All @tauri-apps/* packages |

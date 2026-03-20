@@ -1,0 +1,181 @@
+---
+title: "AI Providers"
+description: "Configure AI service providers and models in TouchAI."
+---
+
+TouchAI connects to AI services through configurable providers. Each provider has an API endpoint, an optional API key, and a list of models. Navigate to **Settings → AI Services** to manage your providers.
+
+## Supported provider types
+
+TouchAI supports two provider types, matching the underlying API protocol:
+
+| Type | Protocol | Example services |
+|------|----------|------------------|
+| `openai` | OpenAI Chat Completions API | OpenAI, DeepSeek, Gemini, Grok, Ollama, and any OpenAI-compatible endpoint |
+| `anthropic` | Anthropic Messages API | Anthropic Claude, MiniMax (Anthropic-compatible) |
+
+When you add a provider, TouchAI automatically appends `/v1` to the endpoint for OpenAI-type providers and uses the base URL as-is for Anthropic-type providers.
+
+## Built-in providers
+
+TouchAI ships with several built-in providers pre-configured with the correct endpoints. They are disabled by default — you only need to add your API key and enable the ones you want to use.
+
+| Provider | Type | Endpoint |
+|----------|------|----------|
+| OpenAI | openai | `https://api.openai.com` |
+| Anthropic | anthropic | `https://api.anthropic.com` |
+| DeepSeek | openai | `https://api.deepseek.com` |
+| Gemini | openai | `https://generativelanguage.googleapis.com` |
+| Grok | openai | `https://api.x.ai` |
+
+## Add your first provider
+
+<Steps>
+  <Step title="Open AI Services settings">
+    Open TouchAI and navigate to **Settings → AI Services**. The provider list appears in the left panel.
+  </Step>
+
+  <Step title="Select a provider or add a custom one">
+    Click an existing built-in provider to configure it, or click **Add custom provider** to create a new one.
+
+    For a custom provider, fill in:
+    - **Provider name** — a display label of your choice
+    - **Provider type** — `OpenAI` or `Anthropic`
+    - **API endpoint** — the base URL without a `/v1` suffix (e.g. `https://api.openai.com`)
+    - **API key** — your secret key (optional for some local providers)
+  </Step>
+
+  <Step title="Save the provider configuration">
+    For built-in providers, enter your API key and endpoint in the **Provider configuration** panel on the right. Changes are saved automatically after a short debounce delay.
+  </Step>
+
+  <Step title="Enable the provider">
+    Toggle the provider switch in the provider list to enable it. Disabled providers and their models are not available for selection in the chat interface.
+  </Step>
+
+  <Step title="Add models">
+    With the provider selected, scroll to the **Models** section. Click **Refresh** to fetch the model list from the API automatically, or click **Add model** to add one manually.
+  </Step>
+
+  <Step title="Set a default model">
+    Click the star icon next to any model to mark it as the default. The default model is used when you start a new conversation without selecting a specific model.
+  </Step>
+</Steps>
+
+## Provider setup by type
+
+<Tabs>
+  <Tab title="OpenAI">
+    OpenAI uses the Chat Completions API.
+
+    ```
+    API endpoint: https://api.openai.com
+    API key:      sk-...
+    ```
+
+    TouchAI normalizes the endpoint to `https://api.openai.com/v1` automatically.
+
+    Common models to add:
+
+    | Display name | Model ID |
+    |--------------|----------|
+    | GPT-4o | `gpt-4o` |
+    | GPT-4o mini | `gpt-4o-mini` |
+    | o3 | `o3` |
+    | o4-mini | `o4-mini` |
+
+    <Tip>
+      Use **Refresh** on the models panel to automatically fetch the full list of models available on your account.
+    </Tip>
+  </Tab>
+
+  <Tab title="Anthropic">
+    Anthropic uses its own Messages API.
+
+    ```
+    API endpoint: https://api.anthropic.com
+    API key:      sk-ant-...
+    ```
+
+    Common models to add:
+
+    | Display name | Model ID |
+    |--------------|----------|
+    | Claude Sonnet 4.5 | `claude-sonnet-4-5` |
+    | Claude Opus 4 | `claude-opus-4-0` |
+    | Claude Haiku 3.5 | `claude-haiku-3-5` |
+
+    <Note>
+      The Anthropic provider type does not append `/v1` to the endpoint. Enter the base URL only.
+    </Note>
+  </Tab>
+
+  <Tab title="Local (Ollama)">
+    Any OpenAI-compatible local server works with the `openai` provider type. Ollama exposes an OpenAI-compatible API at `http://localhost:11434`.
+
+    ```
+    Provider name: Ollama
+    Provider type: OpenAI
+    API endpoint:  http://localhost:11434
+    API key:       (leave empty)
+    ```
+
+    TouchAI will call `http://localhost:11434/v1/chat/completions`.
+
+    After adding the provider, click **Refresh** to fetch the list of models you have pulled locally.
+
+    <Tip>
+      Most local providers do not require an API key. Leave the key field empty.
+    </Tip>
+
+    <Warning>
+      Ensure your local server is running before clicking Refresh or starting a conversation. TouchAI does not manage local server processes.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## Managing models
+
+### Add a model manually
+
+Click **Add model** in the models panel and fill in:
+
+| Field | Description |
+|-------|-------------|
+| **Model name** | Display label shown in the model selector (e.g. `GPT-4o`) |
+| **Model ID** | The identifier sent in API requests (e.g. `gpt-4o`) |
+| **Capabilities** | Optional: toggle reasoning, tool calls, multimodal, file, or open-weights flags |
+
+If you leave all capability toggles off, TouchAI will attempt to match the model against its built-in model metadata database and fill in the capabilities automatically.
+
+### Model capabilities
+
+Capabilities are stored per-model and affect how TouchAI uses them:
+
+| Capability | Schema field | Effect |
+|------------|--------------|--------|
+| Tool calls | `tool_call` | Enables MCP tool use for this model |
+| Multimodal | `modalities` (input includes `image`) | Allows image attachments |
+| File | `attachment` | Allows file attachments |
+| Reasoning | `reasoning` | Indicates the model produces extended thinking output |
+| Open weights | `open_weights` | Informational label only |
+
+### Output token limit
+
+The `output_limit` field (sourced from the model metadata database) sets the maximum number of tokens the model can generate per response. This is passed as `max_tokens` in Anthropic requests. For OpenAI requests the field is informational only.
+
+### Default model
+
+Exactly one model across all providers can be marked as default (`is_default = 1`). The default model is pre-selected when you open a new conversation. Click the star icon next to any model to change the default.
+
+### Refresh models from API
+
+Click **Refresh** on the models panel to call the provider's model list endpoint and import any new models not already in your list. Existing models are not modified.
+
+<Note>
+  For providers that require authentication, the Refresh button will fail if no API key is configured.
+</Note>
+
+## Enable and disable providers
+
+The toggle next to each provider in the provider list enables or disables it. Disabled providers are hidden from the model selector in the chat interface. Their models and configuration are preserved.

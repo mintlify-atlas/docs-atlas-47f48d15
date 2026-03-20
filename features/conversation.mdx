@@ -1,0 +1,71 @@
+---
+title: "Conversations"
+description: "Multi-turn conversation panel with persistent history, pin support, message regeneration, and configurable scroll behaviour."
+---
+
+Once you submit a query, TouchAI opens the ConversationPanel above the search bar. You can keep asking follow-up questions and the full message history is sent to the model on every turn.
+
+## How sessions work
+
+Each conversation belongs to a **session** that is persisted in a local SQLite database. Sessions are created automatically on the first request and titled from the first prompt:
+
+- If the prompt is 40 characters or fewer, the title is the prompt text verbatim.
+- If the prompt is longer, the title is the first 40 characters followed by `...`.
+
+Sessions are linked to their requests, messages, tool call logs, and attachments. Closing the overlay does not delete the session — it remains in history and can be reopened from [Quick Search](/features/quick-search).
+
+## ConversationPanel
+
+The panel renders the full message list from the current session. Each message is displayed by the `MessageItem` component, which delegates to `UserMessage` or `AssistantMessage` based on the message role. Tool calls from an agentic run are shown inline as collapsible `ToolCallItem` entries.
+
+### Pinning the window
+
+The toolbar at the top of the panel contains a pin button. Clicking it toggles the pinned state:
+
+- **Unpinned (default):** The window hides when it loses focus.
+- **Pinned:** The window stays visible even after losing focus. The pin icon rotates −30 degrees to indicate the active state.
+
+Pinning only prevents auto-hide when a conversation is open. If the conversation is cleared, the window will hide on blur again.
+
+### Message regeneration
+
+Every assistant message has a regenerate action. Triggering it finds the preceding user message in history, re-submits that message's content and attachments to the model using the current model override (if set), and appends the new response to the conversation.
+
+### Dragging the window
+
+The fade overlay area at the top of the panel (the toolbar region) acts as a drag handle. Click and drag there to reposition the window on screen. Interactive elements inside the toolbar (the pin button) are excluded from drag handling via `data-drag-exclude="true"`.
+
+## Scroll behaviour
+
+The ConversationPanel scroll mode is controlled by the `outputScrollBehavior` setting (Settings → General). Three modes are available:
+
+<Tabs>
+  <Tab title="follow_output (default)">
+    The panel automatically scrolls to the bottom as new content streams in. If you manually scroll up during streaming, auto-scroll is disabled and a **scroll-to-bottom** button appears. Auto-scroll resumes when you scroll back to the bottom.
+  </Tab>
+  <Tab title="stay_position">
+    The scroll position does not change when new content arrives. A scroll-to-bottom button appears whenever content extends below the viewport.
+  </Tab>
+  <Tab title="jump_to_top">
+    When a new user message is added, the view scrolls to the top of that message. The scroll position is then fixed until the next submission.
+  </Tab>
+</Tabs>
+
+The maximum panel height is 600 px by default. The outer window height is capped at 700 px.
+
+## Clearing a conversation
+
+Press <kbd>Escape</kbd> when the search bar is empty and a conversation is open to clear all messages and return to the blank search state. The session data remains in the database — only the in-memory conversation state is reset.
+
+If the window was hidden while a conversation was open, and it remains hidden for **5 minutes or longer**, the conversation is automatically cleared the next time the window is shown.
+
+## Keyboard navigation in the conversation panel
+
+Press <kbd>Tab</kbd> from the search bar to move focus to the conversation panel container. Once focused, the panel responds to:
+
+| Key | Action |
+|-----|--------|
+| <kbd>ArrowUp</kbd> / <kbd>ArrowDown</kbd> | Scroll the panel |
+| <kbd>PageUp</kbd> / <kbd>PageDown</kbd> | Scroll by page |
+| <kbd>Home</kbd> / <kbd>End</kbd> | Jump to the top or bottom |
+| <kbd>Space</kbd> | Scroll down |

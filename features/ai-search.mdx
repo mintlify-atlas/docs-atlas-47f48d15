@@ -1,0 +1,113 @@
+---
+title: "AI Search"
+description: "The floating overlay that surfaces on Alt+Space — type a query, attach files, and stream a response from any configured model."
+---
+
+AI Search is the main entry point for querying models in TouchAI. It appears as a borderless, always-on-top overlay window that floats above your other apps, accepts text and attachments, streams the model response live, and auto-hides when you move focus away.
+
+## Triggering the overlay
+
+Press <kbd>Alt</kbd><kbd>Space</kbd> (default) to show or raise the window. The shortcut is configurable in General Settings. When the window appears, focus is immediately placed in the search bar so you can start typing.
+
+<Info>
+If the shortcut is already registered by another application, TouchAI sends a system notification and the shortcut will not activate. Change it in Settings → General.
+</Info>
+
+## SearchBar
+
+The SearchBar is the input area at the bottom of the overlay. It is a rich-text editor built on Tiptap/ProseMirror and supports multi-line text, inline model tags, and attachment chips.
+
+### Text input
+
+The editor expands up to three lines before becoming scrollable. When the cursor is on the first line of a single-line input, TouchAI treats that as the "cursor at start" position and enables certain backspace shortcuts (see [Keyboard shortcuts](#keyboard-shortcuts) below).
+
+### Model selection
+
+Click the model logo on the left side of the search bar, or press <kbd>@</kbd>, to open the model picker dropdown. Selecting a model inserts a model tag inline in the editor and sets a per-query model override — that query will use the chosen model regardless of your default.
+
+The override stores both the model ID and the provider ID:
+
+```typescript
+interface SearchModelOverride {
+  modelId: string | null;
+  providerId: number | null;
+}
+```
+
+To clear the override, press <kbd>Backspace</kbd> when the cursor is at the start of the input, or press <kbd>Escape</kbd> when the input is empty and a model tag is present.
+
+### Attachments
+
+TouchAI supports two attachment types:
+
+| Type | Value |
+|------|-------|
+| `image` | Inline image, sent as base64 to multimodal models |
+| `file` | Any file, sent as text content to models that support files |
+
+Attachments are added by pasting from the clipboard (<kbd>Ctrl</kbd><kbd>V</kbd> / <kbd>Cmd</kbd><kbd>V</kbd>). The clipboard reader accepts both image data and file paths. Each attachment is checked against the active model's declared capabilities (`supportsImages`, `supportsFiles`). Attachments that the model does not support are marked as unsupported and cannot be submitted — a notification explains why.
+
+<Warning>
+If you attach a file and then switch to a model that does not support files, the attachment is marked unsupported. Remove it or switch to a compatible model before submitting.
+</Warning>
+
+## Streaming response
+
+When a query is submitted, the AI service streams chunks back to the UI. While the request is in flight, the overlay border animates as a flowing gradient cycling through blue → violet → pink → violet → blue over a 1.5 s loop.
+
+```css
+/* Active during streaming */
+.search-view-container.loading {
+  border: 2px solid transparent;
+  background-image:
+    linear-gradient(var(--color-background-primary), var(--color-background-primary)),
+    linear-gradient(
+      90deg,
+      var(--color-blue-500),
+      var(--color-violet-500),
+      var(--color-pink-500),
+      var(--color-violet-500),
+      var(--color-blue-500)
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  animation: border-flow 1.5s linear infinite;
+}
+```
+
+Once streaming finishes, the border returns to its default static style.
+
+## Window behavior
+
+<CardGroup cols={2}>
+  <Card title="Transparent & borderless" icon="layers">
+    The window has no native title bar. The container uses `backdrop-blur-xl` and a subtle border to float above the desktop.
+  </Card>
+  <Card title="Always on top" icon="arrow-up">
+    The overlay stays above other windows so you can query without switching away from your work.
+  </Card>
+  <Card title="Auto-hide on blur" icon="eye-off">
+    When the app loses focus and no conversation is pinned, the window hides automatically. If hidden for 5 minutes or longer, the conversation is cleared on next open.
+  </Card>
+  <Card title="Pin to keep open" icon="pin">
+    While a conversation is active, click the pin button in the toolbar to prevent the window from hiding on blur.
+  </Card>
+</CardGroup>
+
+## Keyboard shortcuts
+
+| Key | Action |
+|-----|--------|
+| <kbd>Enter</kbd> | Submit the query |
+| <kbd>Shift</kbd><kbd>Enter</kbd> | Insert a newline |
+| <kbd>@</kbd> | Open the model picker dropdown |
+| <kbd>ArrowUp</kbd> | Submit (when input is single-line) |
+| <kbd>ArrowDown</kbd> | Open Quick Search panel |
+| <kbd>Escape</kbd> | Cancel streaming → clear model override → clear conversation → hide window (in priority order) |
+| <kbd>Tab</kbd> | Move focus to the conversation panel (when a conversation is open) |
+| <kbd>Backspace</kbd> (cursor at start) | Remove the model override tag |
+| <kbd>Ctrl/Cmd</kbd><kbd>V</kbd> | Paste text or import clipboard images/files as attachments |
+
+<Note>
+When the model dropdown is open, <kbd>ArrowUp</kbd>, <kbd>ArrowDown</kbd>, and <kbd>Enter</kbd> navigate and select within the dropdown instead of the normal search bar behaviour.
+</Note>

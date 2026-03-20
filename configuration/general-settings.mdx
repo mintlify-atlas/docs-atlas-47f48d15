@@ -1,0 +1,82 @@
+---
+title: "General Settings"
+description: "Configure TouchAI's startup behavior, global shortcut, and conversation output settings."
+---
+
+General settings control how TouchAI starts, how you invoke it, and how the conversation output behaves. Navigate to **Settings → General** to access these options.
+
+## Settings reference
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `globalShortcut` | `Alt+Space` | Global keyboard shortcut to show or hide the overlay |
+| `startOnBoot` | `false` | Launch TouchAI automatically when the system starts |
+| `startMinimized` | `true` | Start silently in the system tray without showing the window |
+| `mcpMaxIterations` | `10` | Maximum number of consecutive MCP tool calls per AI response (range: 1–50) |
+| `outputScrollBehavior` | `follow_output` | How the conversation panel scrolls while the AI is generating a response |
+
+Settings are persisted in the SQLite database under the `settings` table. Changes take effect immediately.
+
+## Global shortcut
+
+The global shortcut lets you show or hide the TouchAI overlay from anywhere on your desktop, even when TouchAI is not in focus.
+
+The default shortcut is **Alt+Space**. To change it:
+
+1. Click the shortcut input field under **Global shortcut**.
+2. Press the key combination you want to use. Supported modifier keys are **Ctrl**, **Alt**, and **Shift**.
+3. The input field captures the shortcut as you type. When you click away, the shortcut is registered with the operating system and saved.
+
+<Warning>
+  Win key (Meta) combinations are not supported. If a shortcut is already registered by another application, TouchAI will display an error notification and the shortcut will not be saved.
+</Warning>
+
+Suggested alternatives if `Alt+Space` conflicts with your system:
+
+- `Ctrl+Space`
+- `Alt+Shift+Space`
+
+If the shortcut fails to register at startup, a system notification is shown. You can retry or choose a different combination in Settings.
+
+## Startup settings
+
+### Start on boot
+
+When enabled, TouchAI is added to the system's autostart list and launches automatically when you log in. This uses the Tauri autostart plugin and works on Windows, macOS, and Linux.
+
+**Default:** disabled
+
+### Start minimized
+
+When enabled, TouchAI starts without showing the overlay window and goes directly to the system tray. You can still invoke it with the global shortcut at any time.
+
+**Default:** enabled
+
+<Tip>
+  Enable both **Start on boot** and **Start minimized** for the most seamless experience — TouchAI will be available via shortcut immediately after login without any visible window.
+</Tip>
+
+## Conversation settings
+
+### Maximum tool call iterations
+
+Controls how many times the AI is allowed to call MCP tools consecutively within a single response. This prevents runaway agent loops.
+
+- **Range:** 1 to 50
+- **Default:** 10
+
+Increase this value if you use complex MCP workflows that require many tool calls. Decrease it to limit resource usage or to detect unexpected agent behavior early.
+
+### Output scroll behavior
+
+Determines how the conversation panel scrolls while the AI is streaming a response:
+
+| Value | Label | Behavior |
+|-------|-------|----------|
+| `follow_output` | Follow output | Automatically scrolls to the latest content as it streams in |
+| `stay_position` | Stay in place | Keeps the current scroll position unchanged while output is generated |
+| `jump_to_top` | Jump to top | Scrolls to the top of the session when output begins |
+
+**Default:** `follow_output`
+
+Use `stay_position` when you want to read earlier messages while the AI is still responding. Use `jump_to_top` if you prefer to start reading from the beginning of the conversation when a new response starts.
